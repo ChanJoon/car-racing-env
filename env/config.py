@@ -12,6 +12,8 @@ class Environment_Parameters(Parameters):
     dt : float = 0.02
     sim_method_num_steps : int = 3
     randomize_track : bool = True
+    track_row : int = 5
+    track_col : int = 7
     is_constant_track_border : bool = True
     render_fps : int = 60  # Set 0 if fps limit to be disabled.
     is_X11_forwarding : bool = False  # Set True if the GUI is opened via X11 forwarding (e. g. remote ssh, docker)
@@ -36,6 +38,11 @@ class Vehicle_Parameters(Parameters):
     Df  : float = 0.192
     L   : float = 0.12
     W   : float = 0.06
+    
+    ddelta_min : float = -1e0
+    ddelta_max : float =  1e0
+    dD_min : float = -1e0
+    dD_max : float =  1e0
 
 
 @dataclass

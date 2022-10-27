@@ -20,7 +20,11 @@ class VehicleModel:
         Cf=1.2,
         Df=0.192,
         L=0.24,
-        W=0.12
+        W=0.12,
+        ddelta_min=-1e0,
+        ddelta_max=1e0,
+        dD_min=-1e0,
+        dD_max=1e0
     ):
 
         self.m = m

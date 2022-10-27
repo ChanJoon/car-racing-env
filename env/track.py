@@ -6,18 +6,23 @@ import random
 
 class Track:
 
-  def __init__(self, row_num=5, col_num=7):
+  def __init__(self, row_num=5, col_num=7, randomize_track=True):
     self.row_num = row_num
     self.col_num = col_num
 
+    self.randomize_track = randomize_track
+
+    self.createTrack()
+
+  def getCenterLineError(self, x, y):
+    return getContouringError(x, y, self.disc_coords, self.center_spline)
+
+  def createTrack(self):
     self.coords = getTrajectories(self.row_num, self.col_num)
     self.actions = getActions([0, 0], self.coords)
 
     self.disc_coords = genCenterCoords(self.coords)
     self.center_spline = getCenterSpline(self.disc_coords)
-
-  def getCenterLineError(self, x, y):
-    return getContouringError(x, y, self.disc_coords, self.center_spline)
 
   
 
@@ -30,8 +35,7 @@ def getTrajectories(row_num, col_num):
     end = (0, 4)
 
     path = aStar(graph, start, end)
-    
-
+    # print(path)
     if (path is not None):
       path.append((0, 3))
       path.insert(0, (0, 1))
@@ -205,6 +209,10 @@ def genCenterCoords(coords):
         cs.append(_c)
 
     disc_coords = np.concatenate((disc_coords, cs))
+  
+  # print(disc_coords.shape)
+  # plt.scatter(disc_coords[:,0], disc_coords[:,1])
+  # plt.show()
 
   return disc_coords
 

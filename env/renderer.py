@@ -1,10 +1,14 @@
 import matplotlib
-
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.pylab import Rectangle, gca
-from vehicle_model import VehicleModel
-from track import Track 
+try:
+    from env.vehicle_model import VehicleModel
+    from env.track import Track 
+except:
+    from vehicle_model import VehicleModel
+    from track import Track 
 from PIL import Image
 import matplotlib.transforms as mtransforms
 from matplotlib.figure import figaspect
@@ -19,6 +23,7 @@ import platform
 if platform.system() == 'Darwin':
     matplotlib.use('Qt5Agg')
 
+cwd = os.path.abspath(os.getcwd())
 class Renderer:
 
     def __init__(
@@ -52,10 +57,10 @@ class Renderer:
         Send state data to server via socket.io
         """
         self.render_list.append(state)
-
+        self.update(state)
         # spawn car
-        imageData = plt.imread('images/cars/car_6.png')
-        plt.imshow(imageData, extent=(0.5, 1.5, -0.5, 0.5))
+        # imageData = plt.imread(cwd+'/env/images/cars/car_6.png')
+        # plt.imshow(imageData, extent=(0.5, 1.5, -0.5, 0.5))
 
 
     def reset(self):
@@ -74,16 +79,16 @@ class Renderer:
         # Start Sections
         
 
-        imageData = plt.imread('images/start_1.png')
+        imageData = plt.imread(cwd+'/env/images/start_1.png')
         plt.imshow(imageData, extent=(1.5, 2.5, -0.5, 0.5))
 
-        imageData = plt.imread('images/start_2.png')
+        imageData = plt.imread(cwd+'/env/images/start_2.png')
         plt.imshow(imageData, extent=(0.5, 1.5, -0.5, 0.5))
 
-        imageData = plt.imread('images/straight_hor.png')
+        imageData = plt.imread(cwd+'/env/images/straight_hor.png')
         plt.imshow(imageData, extent=(2.5, 3.5, -0.5, 0.5))
 
-        imageData = plt.imread('images/curve_3.png')
+        imageData = plt.imread(cwd+'/env/images/curve_3.png')
         plt.imshow(imageData, extent=(-0.5, 0.5, -0.5, 0.5))
 
         self.drawByActions(self.track.actions)
@@ -96,7 +101,7 @@ class Renderer:
         # self.car_boxes.append(patches.Rectangle((0, 0), 0, 0, fc='y'))
         
 
-        imageData = Image.open('images/cars/car_6.png')
+        imageData = Image.open(cwd+'/env/images/cars/car_6.png')
         imageData = imageData.rotate(90, expand=True)
 
 
@@ -117,72 +122,70 @@ class Renderer:
 
         # y+=1 # First Action is N
 
-        print(actions)
         for idx, action in enumerate(actions):
             if (idx == 0 or idx == len(actions) - 2 or idx == len(actions) - 1):
                 continue
             
             if (last_action == "N" and action == "N"):
-                imageData = plt.imread("images/straight_ver.png")
+                imageData = plt.imread(cwd+"/env/images/straight_ver.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 y += 1
             elif (last_action == "N" and action == "E"):
-                imageData = plt.imread("images/curve_2.png")
+                imageData = plt.imread(cwd+"/env/images/curve_2.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 x += 1
             elif (last_action == "N" and action == "W"):
-                imageData = plt.imread("images/curve_1.png")
+                imageData = plt.imread(cwd+"/env/images/curve_1.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 x += -1
             elif (last_action == "E" and action == "N"):
-                imageData = plt.imread("images/curve_4.png")
+                imageData = plt.imread(cwd+"/env/images/curve_4.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 y += 1
             elif (last_action == "E" and action == "E"):
-                imageData = plt.imread("images/straight_hor.png")
+                imageData = plt.imread(cwd+"/env/images/straight_hor.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 x += 1
             elif (last_action == "E" and action == "S"):
-                imageData = plt.imread("images/curve_1.png")
+                imageData = plt.imread(cwd+"/env/images/curve_1.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 y += -1
             elif (last_action == "S" and action == "E"):
-                imageData = plt.imread("images/curve_3.png")
+                imageData = plt.imread(cwd+"/env/images/curve_3.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 x += 1
             elif (last_action == "S" and action == "S"):
-                imageData = plt.imread("images/straight_ver.png")
+                imageData = plt.imread(cwd+"/env/images/straight_ver.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 y += -1
             elif (last_action == "S" and action == "W"):
-                imageData = plt.imread("images/curve_4.png")
+                imageData = plt.imread(cwd+"/env/images/curve_4.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 x += -1
             elif (last_action == "W" and action == "N"):
-                imageData = plt.imread("images/curve_3.png")
+                imageData = plt.imread(cwd+"/env/images/curve_3.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 y += 1
             elif (last_action == "W" and action == "S"):
-                imageData = plt.imread("images/curve_2.png")
+                imageData = plt.imread(cwd+"/env/images/curve_2.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 y += -1
             elif (last_action == "W" and action == "W"):
-                imageData = plt.imread("images/straight_hor.png")
+                imageData = plt.imread(cwd+"/env/images/straight_hor.png")
                 plt.imshow(imageData, extent=(x-0.5, x+0.5, y-0.5, y+0.5))
                 x += -1
             
             last_action = action
             
-    def update(self):
+    def update(self, state):
         self.i += 1
         # Car 
         self.fig.canvas.restore_region(self.background)
         for car_box in self.car_boxes:
             
 
-            # vx, vy = self.model.footprint(state[0], state[1], state[2])
-            vx, vy = self.model.footprint(2+0.1*i, 0, i / 100)
-            print(vx)
+            vx, vy = self.model.footprint(state[0], state[1], state[2])
+
             self.ax.draw_artist(
                 self.ax.plot(np.hstack((vx, vx[:1])), np.hstack((vy, vy[:1])), color='k', linewidth=1, animated=True)[0]
             )
@@ -208,5 +211,5 @@ if __name__ == "__main__":
     renderer = Renderer("", "", track, model)
     renderer.reset()
     renderer.show()
-    for i in range(1000):
+    for i in range(20):
         renderer.update()
