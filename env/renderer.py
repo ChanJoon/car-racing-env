@@ -67,6 +67,7 @@ class Renderer:
         """Resets the render collection list.
         This method should be usually called inside environment's reset method.
         """
+        plt.gca().cla()
         self.render_list = []
         
         ax = self.ax
@@ -75,10 +76,7 @@ class Renderer:
         ax.set_ylim([-1,5])
         ax.set_xlim([-1,6])
 
-        # plt.scatter(self.track.disc_coords[:,0], self.track.disc_coords[:, 1])
         # Start Sections
-        
-
         imageData = plt.imread(cwd+'/env/images/start_1.png')
         plt.imshow(imageData, extent=(1.5, 2.5, -0.5, 0.5))
 

@@ -12,8 +12,6 @@ class Track:
 
     self.randomize_track = randomize_track
 
-    self.createTrack()
-
   def getCenterLineError(self, x, y):
     return getContouringError(x, y, self.disc_coords, self.center_spline)
 
@@ -227,7 +225,8 @@ def getCenterSpline(disc_coords):
 
 def getContouringError(X, Y, disc_coords, center_spline):
   thetaref = 2 * np.pi * np.linspace(0, 1, disc_coords.shape[0])
-  initial_guess = thetaref[np.argmin((disc_coords[:,0] - X)**2 + (disc_coords[:,1] - Y)**2)]
+  ref_idx = np.argmin((disc_coords[:,0] - X)**2 + (disc_coords[:,1] - Y)**2)
+  initial_guess = thetaref[ref_idx]
 
   def dist_sq(spline, theta, X, Y, eval_gradient=True):
     p = spline(theta)

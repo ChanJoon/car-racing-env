@@ -42,9 +42,13 @@ if __name__ == "__main__":
     controller_throttle.send(None)
 
     state = env.reset()
-    for i in range(1000):
+    for i in range(2000):
         u1 = controller_theta.send([i / 100, env.e, 0])
         u2 = controller_throttle.send([i / 100, env.vx, 0.5])
 
         action = [u1, u2]
-        state, _, _, _, _ = env.step(action)
+        state, reward, done, info = env.step(action)
+
+        if done == True:
+            break
+
