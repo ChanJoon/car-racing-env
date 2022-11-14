@@ -230,7 +230,7 @@ def getContouringError(X, Y, disc_coords, center_spline):
 
   def dist_sq(spline, theta, X, Y, eval_gradient=True):
     p = spline(theta)
-    d = (p[0] - X)**2 - (p[1] - Y)**2
+    d = (p[0] - X)**2 + (p[1] - Y)**2
     if eval_gradient:
         dp = spline(theta, 1)
         return d, 2 * (dp[0] * (p[0] - X) + dp[1] * (p[1] - Y))
