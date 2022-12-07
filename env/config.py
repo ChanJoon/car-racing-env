@@ -16,7 +16,11 @@ class Environment_Parameters(Parameters):
     track_col : int = 7
     is_constant_track_border : bool = True
     render_fps : int = 60  # Set 0 if fps limit to be disabled.
-    max_laps : int = 1  # 한 에피소드에 돌 랩 수
+    max_laps : int = 2  # 한 에피소드에 돌 랩 수
+
+    server_path : str = "127.0.0.1"
+    username : str = "hwanmoo"
+    room_id : str = "test"
 
 @dataclass
 class Vehicle_Parameters(Parameters):
@@ -43,6 +47,11 @@ class Vehicle_Parameters(Parameters):
     ddelta_max : float =  1e0
     dD_min : float = -1e0
     dD_max : float =  1e0
+
+    delta_min : float = -0.8 # ~= 45deg
+    delta_max : float =  0.8
+    D_min : float = -1.
+    D_max : float =  1.
 
 
 @dataclass

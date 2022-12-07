@@ -5,6 +5,7 @@
 - matplotlib == 3.5.2
 - casadi == 3.5.5
 - gym == 0.24.1
+- redis
 
 ## Run
 ```
