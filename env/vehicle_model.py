@@ -1,5 +1,5 @@
 from casadi import sin, cos, tanh, atan, atan2, fabs, sign, fmax, sqrt
-from numpy import array
+from numpy import array, clip
 
 class VehicleModel:
 
@@ -21,10 +21,14 @@ class VehicleModel:
         Df=0.192,
         L=0.24,
         W=0.12,
-        ddelta_min=-1e0,
-        ddelta_max=1e0,
-        dD_min=-1e0,
-        dD_max=1e0
+        delta_min=-0.8,
+        delta_max=0.8,
+        D_min=-1.0,
+        D_max=1.0,
+        ddelta_min=-1,
+        ddelta_max=1,
+        dD_min = -1,
+        dD_max = 1
     ):
 
         self.m = m
@@ -44,6 +48,16 @@ class VehicleModel:
         self.Df = Df
         self.L = L
         self.W = W
+
+        self.ddelta_min = ddelta_min
+        self.ddelta_max = ddelta_max
+        self.dD_min = dD_min
+        self.dD_max = dD_max
+
+        self.delta_min = delta_min
+        self.delta_max = delta_max
+        self.D_min = D_min
+        self.D_max = D_max
 
 
     def get_tire_slip_angle(self, vx, vy, omega, delta):
@@ -83,6 +97,7 @@ class VehicleModel:
         D: Duty-cycle of the PWM signal of the DC motor.
         ddelta: Steering angle change rate.
         '''
+        # [delta, D] = clip([ddelta, dD], [self.delta_min, self.D_min], [self.delta_max, self.D_max])
 
         Ffy, Fry, Frx = self.get_tire_force(vx, vy, omega, delta, D)
 
