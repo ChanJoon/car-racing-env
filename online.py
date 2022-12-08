@@ -1,5 +1,6 @@
 from env import Racing, Config
 from env.vehicle_model import VehicleModel
+from time import sleep
 
 def PID(Kp, Ki, Kd, MV_bar=0):
     # initialize stored data
@@ -42,6 +43,12 @@ if __name__ == "__main__":
     controller_throttle.send(None)
 
     state = env.reset()
+
+    print("Game starts in 5 seconds..")
+    sleep(5)
+
+    env.start()
+    
     for i in range(4000):
         u1 = controller_theta.send([i / 100, env.e, 0])
         u2 = controller_throttle.send([i / 100, env.vx, 0.5])

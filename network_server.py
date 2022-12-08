@@ -36,6 +36,11 @@ class RedisRacingServer():
 
         return True
 
+    def start(self, room_id):
+        self.rd.set(self.rd_key('room_status', room_id, None), "racing")
+
+        return self.room_info[room_id]
+
     def leave(self, room_id, username):
         if username in self.rooms[room_id]:
             self.rooms[room_id].remove(username)
