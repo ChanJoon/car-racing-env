@@ -21,6 +21,11 @@ class Network():
             else:
                 time.sleep(0.1)
 
+    def start(self):
+        self.rd.set(self.rd_key('room_status'), "racing")
+
+        return True
+
     def leaveRoom(self):
         self.rd.lpush(self.rd_key('leave_queue'), self.room_id+"_"+self.username)
 
