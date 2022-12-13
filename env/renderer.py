@@ -7,8 +7,8 @@ try:
     from env.vehicle_model import VehicleModel
     from env.track import Track 
 except:
-    from .vehicle_model import VehicleModel
-    from .track import Track 
+    from vehicle_model import VehicleModel
+    from track import Track 
 from PIL import Image
 import matplotlib.transforms as mtransforms
 from matplotlib.figure import figaspect
@@ -43,24 +43,22 @@ class Renderer:
         self.cars = []
 
         self.i = 0
-        # ax = plt.subplot(111)
-        # self.ax = ax
-        # self.fig = plt.gcf()
 
         self.fig = plt.figure(figsize=figaspect(7/5))
         self.ax = plt.gca()
         plt.axis('off')
         self.fig.canvas.draw()
 
-    def render_step(self, state, trajectory) -> None:
+    def render_step(self, state, render_mode="human", car_states=None, trajectory=None) -> None:
         """
         Send state data to server via socket.io
         """
         self.render_list.append(state)
-        self.update(state, trajectory)
-        # spawn car
-        # imageData = plt.imread(cwd+'/env/images/cars/car_6.png')
-        # plt.imshow(imageData, extent=(0.5, 1.5, -0.5, 0.5))
+
+        if render_mode == "human":
+            self.update(state, trajectory=trajectory) #MEMO MPC Trajectory
+        elif render_mode == "online":
+            self.batchUpdate(car_states)
 
 
     def reset(self):
@@ -175,7 +173,7 @@ class Renderer:
             
             last_action = action
             
-    def update(self, state, trajectory):
+    def update(self, state, trajectory=None):
         self.i += 1
         # Car 
         self.fig.canvas.restore_region(self.background)
@@ -198,17 +196,37 @@ class Renderer:
         self.ax.draw_artist(
             self.ax.scatter(
                 trajectory[:,0], trajectory[:,1],
-                s=1, edgecolor='black', marker='o', animated=True
+                s=1, edgecolor='black', marker='.', animated=True
             )
         )
         self.fig.canvas.blit(self.ax.bbox)
 
         self.fig.canvas.start_event_loop(0.001)
 
+    def batchUpdate(self, car_states):
+        self.i += 1
+        # Car 
+        self.fig.canvas.restore_region(self.background)
+        for username in car_states:
+            state = car_states[username]
+            print("BATCH", state)
+            vx, vy = self.model.footprint(state[0], state[1], state[2])
 
+            self.ax.draw_artist(
+                self.ax.plot(np.hstack((vx, vx[:1])), np.hstack((vy, vy[:1])), color='k', linewidth=1, animated=True)[0]
+            )
+
+            # car_box._angle = -np.rad2deg(yaw[i])
+            # car_box.remove()
+
+        # self.fig.canvas.draw()
+        # self.car_boxes.append(self.ax.add_artist(box))
+        self.fig.canvas.blit(self.ax.bbox)
+
+        self.fig.canvas.start_event_loop(0.001)
+        
     def show(self):
         self.fig.show()
-        # plt.show()
 
 if __name__ == "__main__":
     track = Track()

@@ -32,14 +32,14 @@ SIM_LOOP = 500
 MAX_SPEED = 3.0  # maximum speed [m/s]
 MAX_ACCEL = 5.0  # maximum acceleration [m/ss]
 MAX_CURVATURE = 4.0  # maximum curvature [1/m]
-MAX_ROAD_WIDTH = 0.4  # maximum road width [m]
+MAX_ROAD_WIDTH = 0.35  # maximum road width [m]
 D_ROAD_W = 0.01  # road width sampling length [m]
-DT = 0.3  # time tick [s]
+DT = 0.5  # time tick [s]
 MAX_T = 2.0 # max prediction time [m]
-MIN_T = 1.2  # min prediction time [m]
+MIN_T = 1.0  # min prediction time [m]
 TARGET_SPEED = 3.0  # target speed [m/s]
-D_T_S = 0.2  # target speed sampling length [m/s]
-N_S_SAMPLE = 10  # sampling number of target speed
+D_T_S = 0.1  # target speed sampling length [m/s]
+N_S_SAMPLE = 5  # sampling number of target speed
 ROBOT_RADIUS = 0.067  # robot radius [m]
 
 # cost weights

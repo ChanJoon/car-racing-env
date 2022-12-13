@@ -7,19 +7,23 @@ import numpy as np
 from scipy.integrate import solve_ivp
 
 from .renderer import Renderer
-from .track import Track, FrenetPath
+from .track import Track, dwa
 from .vehicle_model import VehicleModel
 from .utils import RK4
 from .config import Config
+from .network import Network
 
 from .mpc import MPC
 
 import copy
+import redis
+import time
+from collections import defaultdict
 
-class Racing(Env):
+class Racing(Env, Network):
 
     metadata = {
-        "render_modes": ["human", "web"],
+        "render_modes": ["human", "online"],
         "render_fps": 0
     }
 
@@ -42,44 +46,46 @@ class Racing(Env):
         self.integrator_type = config.env.integrator_type
         self.sim_method_num_steps = config.env.sim_method_num_steps
 
-        self.state = np.hstack([[2, 0, 0], [0.01, 0.0, 0.0, 0.0, 0.0]])
+        self.init_x = 2.
+        self.init_y = 0.
+        
+        self.init_state = np.hstack([[self.init_x, self.init_y, 0], [0.01, 0.0, 0.0, 0.0, 0.0]])
+        self.state = self.init_state
 
         self.lap_count = -1
         self.last_lap = 0
         self.temp_lap_flag = False
         
-        self.config = config
+        self.render_mode = render_mode
+        if self.render_mode == "online":
+            self.server_path = config.env.server_path
+            self.rd = redis.StrictRedis(host=self.server_path, port=6379, db=0)
+            self.username = "".join(config.env.username.split("_"))
+            self.room_id = "".join(config.env.room_id.split("_"))
 
+            self.joinRoom()
+            self.resetOnlineSettings()
+
+            self.car_states = defaultdict(lambda: self.init_state)
+        else:
+            self.car_states = None
+
+        self.t = 0
+        self.config = config
 
     def step(self, action):
         reward = -1.0
         
         done = False
-        # self.state = self.frenet_traj.getFrenetpath(self.state) #TODO
+        
+        self.state, trajectory = dwa(self.track, self.state) #TODO
+        # self.state = self.track.getFrenetpath(self.state) #TODO
         solver_status = self.mpc.solve(self.state, action) #DONE
 
-        x = self.mpc.dyn_state  # [theta, ec, epsi, vx, vy, omega, delta, D]
-        u = self.mpc.control    # [ddelta, dD]
-
-        if self.integrator_type=="FROM_MPC":
-            self.state = self.mpc.trajectory[1, :]
-        elif self.integrator_type=="RK4":
-            for _ in range(self.sim_method_num_steps):
-                self.state = RK4(
-                    lambda x: np.array(
-                        self.model.f(*x, *np.clip(self.mpc.control, self.lbdu, self.ubdu))
-                    ),
-                    self.dt/self.sim_method_num_steps, self.state
-                )
-        else:
-            sol = solve_ivp(
-                lambda t, x, u: self.model.f(*x, *u),
-                (0, self.dt),
-                self.state,
-                args=(np.clip(u, self.lbu, self.ubu),),
-                method=self.integrator_type
-            )
-            self.state = sol.y[:, -1]
+        x = self.mpc.trajectory[1,:]    # [theta, ec, epsi, vx, vy, omega, delta, D]
+        u = self.mpc.control            # [ddelta, dD]
+        self.state = self.compute(u)    # [X, Y, psi, vx, vy, omega, delta, D]
+        # print("MPC: ",self.state)
 
         # 시작선 지남
         if (2.4 < self.x <= 2.5) and (-0.5 < self.y < 0.5) and self.temp_lap_flag == False:
@@ -94,22 +100,79 @@ class Racing(Env):
             self.last_lap = self.lap_count
             if self.lap_count == self.max_laps:
                 done = True
+        if self.render_mode == "online":
+            self.getCarStates()
+        self.renderer.render_step(self.state, self.render_mode, self.car_states, trajectory=trajectory)
+        return np.array(self.state, dtype=np.float32), reward, done, np.array(u)
 
-        self.renderer.render_step(self.state, self.mpc.trajectory)
-        return np.array(self.state, dtype=np.float32), reward, done, {}
+    def compute(self, u):
+        if self.render_mode == 'online':
+            # TODO : state 정보 json string으로 저장
+            state_str = np.array2string(self.state, separator=',', suppress_small=True)
+            u_str     = np.array2string(np.asarray(u), separator=',', suppress_small=True)
+            self.rd.set(self.rd_key("state"), state_str)
+            self.rd.set(self.rd_key("action"), u_str)
 
+            self.t = int(self.rd.incr(self.rd_key("step")))
+            while True:
+                if self.rd.get(self.rd_key("room_status")) != b'racing':
+                    print(self.rd.get(self.rd_key("room_status")))
+                    time.sleep(0.01)
+                    continue
 
+                server_t = int(self.rd.get(self.rd_key("step_server")))
+                room_t   = int(self.rd.get(self.rd_key("room_t")))
+                print(server_t, self.t, room_t)
+                if server_t == self.t == room_t:
+                    # TODO : json string parse 후 저장
+                    state_str = self.rd.get(self.rd_key("state_server")).decode('UTF-8')
+                    return eval('np.array(' + state_str + ')')
+                else:
+                    time.sleep(0.01)
+        else:
+            if self.integrator_type=="FROM_MPC":
+                self.state = self.mpc.trajectory[1, :]
+            elif self.integrator_type=="RK4":
+                for _ in range(self.sim_method_num_steps):
+                    self.state = RK4(
+                        lambda x: np.array(
+                            self.model.f(*x, *np.clip(self.mpc.control, self.lbdu, self.ubdu))
+                        ),
+                        self.dt/self.sim_method_num_steps, self.state
+                    )
+            else:
+                sol = solve_ivp(
+                    lambda t, x, u: self.model.f(*x, *u),
+                    (0, self.dt),
+                    self.state,
+                    args=(np.clip(u, self.lbu, self.ubu),),
+                    method=self.integrator_type
+                )
+                self.state = sol.y[:, -1]
+        return self.state
+        
     def reset(self, *, seed: Optional[int] = None, return_info: bool = False, options: Optional[dict] = None):
         if self.track.randomize_track == True or self.track.disc_coords is None:
             self.track.createTrack()
-        #TODO
-        # self.frenet_traj = FrenetPath(self.track)
-        # super().reset(seed=seed)
-        self.state = np.hstack([[2, 0, 0], [0.01, 0.0, 0.0, 0.0, 0.0]])  # TODO: Initialization method
-        self.renderer.reset()
-        self.renderer.show()
         #DONE MPC
         self.mpc = MPC(self.model, self.track, self.config)
+        # super().reset(seed=seed)
+        # 출발 좌표 지정
+        if self.render_mode == "online":
+            # TODO : init pos 없을 경우 처리 / 서버에 요청
+            init_pos = self.rd.get(self.rd_key("init_pos"))
+            if init_pos is not None:
+                self.init_x = float(init_pos.split(';')[0])
+                self.init_y = float(init_pos.split(';')[1])
+
+                self.init_state = np.hstack([[self.init_x, self.init_y, 0], [0.01, 0.0, 0.0, 0.0, 0.0]])
+            
+        self.state = self.init_state  # TODO: Initialization method
+        self.renderer.reset()
+        self.renderer.show()
+
+        if self.render_mode == "online":
+            self.resetOnlineSettings()
         
         if not return_info:
             return np.array(self.state, dtype=np.float32)

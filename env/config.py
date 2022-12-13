@@ -10,13 +10,18 @@ class Environment_Parameters(Parameters):
 
     integrator_type : str = "FROM_MPC"  # ["RK4", "RK45", "RK23", "DOP853", "radau", "BDF", "LSODA"]
     dt : float = 0.02
-    sim_method_num_steps : int = 5
+    sim_method_num_steps : int = 3
     randomize_track : bool = True
     track_row : int = 5
     track_col : int = 7
     is_constant_track_border : bool = True
     render_fps : int = 60  # Set 0 if fps limit to be disabled.
-    max_laps : int = 3  # 한 에피소드에 돌 랩 수
+    max_laps : int = 1  # 한 에피소드에 돌 랩 수
+
+    server_path : str = "127.0.0.1"
+    username : str = "hwanmoo"
+    room_id : str = "test"
+
 
 @dataclass
 class Vehicle_Parameters(Parameters):
@@ -44,16 +49,16 @@ class Vehicle_Parameters(Parameters):
     dD_min : float = -1e0
     dD_max : float =  1e0
 
-    delta_min : float = -0.8
+    delta_min : float = -0.8 # ~= 45deg
     delta_max : float =  0.8
-    D_min : float = -1
-    D_max : float =  1
+    D_min : float = -1.
+    D_max : float =  1.
 
 @dataclass
 class MPC_Parameters(Parameters):
 
     dt : float = 0.02
-    N  : int   = 50
+    N  : int   = 50 # 60
     delta_min : float = -0.8
     delta_max : float =  0.8
     D_min : float = -1.
@@ -86,7 +91,7 @@ class MPC_Parameters(Parameters):
 
     pp_cost_mode : int = 0  # [0: min((thetaref - theta)^2), 1: min(theta0-theta), 2: min(1/(theta-theta0))]
     # pp_ref_horizon_length : float = 2.8  # Only used in pp_cost_mode=0
-    pp_ref_horizon_length : float = 1.6
+    pp_ref_horizon_length : float = 0.8 # 1.6 0.8 dwa
     qtheta = 1e-1
     qec = 1e-8
 

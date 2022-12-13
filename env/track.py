@@ -6,6 +6,7 @@ import random
 
 from numpy import argmin, sin, cos, arctan2
 from .FrenetOptimalTrajectory import frenet_optimal_trajectory
+from .DynamicWindowApproach import dynamic_window_approach
 from .config import Config
 
 class Track:
@@ -15,7 +16,7 @@ class Track:
     self.col_num = col_num
 
     self.randomize_track = randomize_track
-    self.FrenetPath = frenet_optimal_trajectory.FrenetPath
+    # self.FrenetPath = frenet_optimal_trajectory.FrenetPath
 
   def __call__(self, theta, *args, **kwargs):
       return self.__spline(theta, *args, **kwargs)
@@ -49,7 +50,7 @@ class Track:
 
   def __dist_sq(self, theta, X, Y, eval_gradient=True):
       p = self.__spline(theta)
-      d = (p[0] - X)**2 - (p[1] - Y)**2
+      d = (p[0] - X)**2 + (p[1] - Y)**2
       if eval_gradient:
           dp = self.__spline(theta, 1)
           return d, 2 * (dp[0] * (p[0] - X) + dp[1] * (p[1] - Y))
@@ -84,37 +85,9 @@ class Track:
 
     self.disc_coords, _, self.sref  = genCenterCoords(self.coords)
     self.kapparef = getCenterCurvature(self.disc_coords)
-    print(self.kapparef)
 
     self.center_spline = getCenterSpline(self.disc_coords)
     self.__spline = CubicSpline(self.thetaref, self.disc_coords, bc_type="periodic")
-
-class FrenetPath:
-  def __init__(self, track):
-    self.track = track
-    # target waypoints and curvature
-    self.tx = self.track.Xref
-    self.ty = self.track.Yref
-    self.tc = getCenterCurvature(self.track.disc_coords)
-    self.csp = CubicSpline(self.track.thetaref, self.track.disc_coords, bc_type="periodic")
-    
-    # initial state
-    self.c_speed = 0.01  # current speed [m/s]
-    self.c_accel = 0.0 # current acceleration [m/ss]
-    self.c_d = 0.0  # current lateral position [m]
-    self.c_d_d = 0.0  # current lateral speed [m/s]
-    self.c_d_dd = 0.0  # current lateral acceleration [m/s]
-    self.s0 = 2.0  # current course position
-
-    self.lap_count = -1
-
-    # obstacle lists
-    self.ob = np.array([[20.0, 10.0],
-                   [30.0, 6.0],
-                   [30.0, 8.0],
-                   [35.0, 8.0],
-                   [50.0, 3.0]
-                   ])
 
   def getFrenetpath(self, state):
     '''
@@ -127,31 +100,75 @@ class FrenetPath:
     D: Duty cycle
     delta: Steering angle change rate
     '''
+    # target waypoints and curvature
+    self.tx = self.Xref
+    self.ty = self.Yref
+    self.tc = getCenterCurvature(self.disc_coords)
+    self.csp = CubicSpline(self.thetaref, self.disc_coords, bc_type="periodic")
+
+    # obstacle lists
+    self.ob = np.array([[20.0, 10.0],
+                   [30.0, 6.0],
+                   [30.0, 8.0],
+                   [35.0, 8.0],
+                   [50.0, 3.0]
+                   ])
+
+    # initial state
+    self.c_speed = (state[3]**2 + state[4]**2)**0.5  # current speed [m/s]
+    print("speed: ",self.c_speed)
+    self.c_accel = 0.0 # current acceleration [m/ss]
+    self.c_d_d = state[4]  # current lateral speed [m/s]
+    self.c_d_dd = state[6]  # current lateral acceleration [m/s]
+    s0, self.c_d = self.get_theta(*state[:2], initial_guess=None, eval_ey=True)  # current course position, current lateral position [m]
+    self.s0 = s0**0.5
+
     path = frenet_optimal_trajectory.frenet_optimal_planning(
         self.csp, self.s0, self.c_speed, self.c_accel, self.c_d, self.c_d_d, self.c_d_dd, self.ob)
 
     # Update
-    self.s0 = state[0]
-    self.c_d = state[1]
-    self.c_d_d = state[4]
-    self.c_d_dd = path.d_dd[1]
-    self.c_speed = (state[3]**2 + state[4]**2)**0.5
+    state[0] = path.x[1]
+    state[1] = path.y[1]
+    state[2] = path.yaw[1]
+    state[3] = path.s_d[1]
+    state[4] = path.d_d[1]
 
-    print("[Frenet]: position ",self.s0, self.c_d, self.c_d_d)
+    state[5] = path.d_dd[1] # omega orientation
+    state[6] = path.d_dd[1] # delta steering angle
+    state[7] = path.d_dd[1] # D Duty-cycle = throttle
 
-    # plt.cla()
-    # for stopping simulation with the esc key.
-    # plt.gcf().canvas.mpl_connect(
-    #     'key_release_event',
-    #     lambda event: [exit(0) if event.key == 'escape' else None])
-    # plt.plot(tx, ty,"-o", markersize=4)
-    # plt.plot(tx[-1], ty[-1], "xk")
-    # # plt.plot(ob[:, 0], ob[:, 1], "xk")
-    # plt.plot(path.x[1:], path.y[1:], "-or", markersize=2)
-    # plt.plot(path.x[1], path.y[1], "vc", markersize=4)
-    # plt.title("v[m/s]:" + str(c_speed)[0:4])
-    # plt.grid(True)
-    # plt.pause(0.00001)
+    return state  
+
+def dwa(track, state):
+  dwa = dynamic_window_approach
+  config = dwa.Config()
+
+  # initial state [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
+  x = np.array([state[0], state[1], state[2], np.hypot(state[3], state[4]), state[5]])
+
+  # goal position [x(m), y(m)]
+  config.theta, _ = track.get_theta(*state[:2], initial_guess=config.theta, eval_ey=True)
+  # print(config.theta)
+  goal = track(config.theta + config.lookahead)
+  # print(goal[0], goal[1])
+
+  # input [forward speed, yaw_rate]
+
+  config.robot_type = dwa.RobotType.rectangle
+  ob = config.ob
+
+  u, predicted_trajectory = dwa.dwa_control(x, config, goal, ob)
+  x = dwa.motion(x, u, config.dt)  # simulate robot
+
+  state[0] = x[0]
+  state[1] = x[1]
+  state[2] = x[2]
+  state[3] = (x[3]*np.cos(x[4]))
+  state[4] = (x[3]*np.sin(x[4]))
+  state[5] = x[4]
+
+  return state, predicted_trajectory
+
 
 
 def getCenterCurvature(disc_coords):
@@ -173,7 +190,7 @@ def getTrajectories(row_num, col_num):
     end = (0, 4)
 
     path = aStar(graph, start, end)
-
+    # print(path)
     if (path is not None):
       path.append((0, 3))
       path.insert(0, (0, 1))

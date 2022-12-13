@@ -68,7 +68,6 @@ class MPC:
             self.trajectory = zeros((self.N, self.nx))
         self.control = u0
 
-        self.dyn_state = x0 #MEMO [theta, ec, epsi, vx, vy, omega, delta, D]
 
         for k in range(self.N):
             self.trajectory[k, :] = self.__solver.get(k, "x")
@@ -82,6 +81,7 @@ class MPC:
         self.trajectory[:, 2] += psiref
         if status==0:
             self.theta = self.__solver.get(1, "x")[0]
+
 
 
         return status
