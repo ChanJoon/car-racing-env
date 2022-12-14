@@ -12,7 +12,6 @@ from .vehicle_model import VehicleModel
 from .utils import RK4
 from .config import Config
 from .network import Network
-
 from .mpc import MPC
 
 import copy
@@ -73,19 +72,22 @@ class Racing(Env, Network):
         self.t = 0
         self.config = config
 
-    def step(self, action):
+    def step(self, action, useDWA=False):
         reward = -1.0
         
         done = False
         
-        self.state, trajectory = dwa(self.track, self.state) #TODO
+        if useDWA:
+            action[0] = 0.8 # pp_ref_horizon_length
+            self.state, trajectory = dwa(self.track, self.state) #TODO
         # self.state = self.track.getFrenetpath(self.state) #TODO
-        solver_status = self.mpc.solve(self.state, action) #DONE
+        solver_status = self.mpc.solve(self.state, action)
+        if not useDWA:
+            trajectory = self.mpc.trajectory
 
         x = self.mpc.trajectory[1,:]    # [theta, ec, epsi, vx, vy, omega, delta, D]
         u = self.mpc.control            # [ddelta, dD]
         self.state = self.compute(u)    # [X, Y, psi, vx, vy, omega, delta, D]
-        # print("MPC: ",self.state)
 
         # 시작선 지남
         if (2.4 < self.x <= 2.5) and (-0.5 < self.y < 0.5) and self.temp_lap_flag == False:
@@ -130,16 +132,8 @@ class Racing(Env, Network):
                 else:
                     time.sleep(0.01)
         else:
-            if self.integrator_type=="FROM_MPC":
+            if self.integrator_type=="MPC":
                 self.state = self.mpc.trajectory[1, :]
-            elif self.integrator_type=="RK4":
-                for _ in range(self.sim_method_num_steps):
-                    self.state = RK4(
-                        lambda x: np.array(
-                            self.model.f(*x, *np.clip(self.mpc.control, self.lbdu, self.ubdu))
-                        ),
-                        self.dt/self.sim_method_num_steps, self.state
-                    )
             else:
                 sol = solve_ivp(
                     lambda t, x, u: self.model.f(*x, *u),
@@ -154,7 +148,6 @@ class Racing(Env, Network):
     def reset(self, *, seed: Optional[int] = None, return_info: bool = False, options: Optional[dict] = None):
         if self.track.randomize_track == True or self.track.disc_coords is None:
             self.track.createTrack()
-        #DONE MPC
         self.mpc = MPC(self.model, self.track, self.config)
         # super().reset(seed=seed)
         # 출발 좌표 지정

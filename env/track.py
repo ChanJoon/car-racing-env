@@ -16,19 +16,10 @@ class Track:
     self.col_num = col_num
 
     self.randomize_track = randomize_track
-    # self.FrenetPath = frenet_optimal_trajectory.FrenetPath
+    # self.FrenetPath = frenet_optimal_trajectory.FrenetPath #TODO
 
   def __call__(self, theta, *args, **kwargs):
       return self.__spline(theta, *args, **kwargs)
-
-  def __iter__(self):
-      return iter(self.__data)
-
-  def __getitem__(self, key):
-      return self.__data[key]
-
-  def __setitem__(self, key, val):
-      self.__data[key] = val
     
   def get_theta(self, X, Y, initial_guess=None, eval_ey=False):
       if initial_guess is None:
@@ -90,16 +81,6 @@ class Track:
     self.__spline = CubicSpline(self.thetaref, self.disc_coords, bc_type="periodic")
 
   def getFrenetpath(self, state):
-    '''
-    s: arc length (=thetaref)
-    ec: min_distance
-    psi: orientation
-    Vx: Longitudinal
-    Vy: Lateral
-    omega: Turning rate
-    D: Duty cycle
-    delta: Steering angle change rate
-    '''
     # target waypoints and curvature
     self.tx = self.Xref
     self.ty = self.Yref
@@ -148,9 +129,7 @@ def dwa(track, state):
 
   # goal position [x(m), y(m)]
   config.theta, _ = track.get_theta(*state[:2], initial_guess=config.theta, eval_ey=True)
-  # print(config.theta)
   goal = track(config.theta + config.lookahead)
-  # print(goal[0], goal[1])
 
   # input [forward speed, yaw_rate]
 
@@ -158,7 +137,7 @@ def dwa(track, state):
   ob = config.ob
 
   u, predicted_trajectory = dwa.dwa_control(x, config, goal, ob)
-  x = dwa.motion(x, u, config.dt)  # simulate robot
+  x = dwa.motion(x, u, config.dt)
 
   state[0] = x[0]
   state[1] = x[1]
@@ -395,20 +374,8 @@ def genCenterCoords(coords):
         s_ = [sref[-1] + ((xref - disc_coords[i-1,0])**2 + (yref - disc_coords[i-1,1])**2)**0.5]
     sref = np.concatenate((sref,s_))
 
-  # for i in range(kapparef.shape[0]):
-  #   if i < (kapparef.shape[0]-1) and kapparef[i] != kapparef[i+1]:
-  #     kapparef[i] = (kapparef[i] + kapparef[i+1]) / 2
-
-  # print("sref\n",sref)
   # print(disc_coords.shape)
-  # print(kapparef.shape)
-  # print(sref.shape)
-  # print(disc_coords[:,0])
-  # print(disc_coords[:,1])
-  # print(kapparef)
-  # print(sref)
   # plt.scatter(disc_coords[:,0], disc_coords[:,1])
-  # plt.grid(True)
   # plt.show()
 
   return disc_coords, kapparef, sref

@@ -19,8 +19,8 @@ class VehicleModel:
         Bf=2.579,
         Cf=1.2,
         Df=0.192,
-        L=0.12,
-        W=0.06,
+        L=0.24,
+        W=0.12,
         delta_min=-0.8,
         delta_max=0.8,
         D_min=-1.0,
@@ -97,6 +97,7 @@ class VehicleModel:
         D: Duty-cycle of the PWM signal of the DC motor.
         ddelta: Steering angle change rate.
         '''
+        # [delta, D] = clip([ddelta, dD], [self.delta_min, self.D_min], [self.delta_max, self.D_max])
 
         Ffy, Fry, Frx = self.get_tire_force(vx, vy, omega, delta, D)
 

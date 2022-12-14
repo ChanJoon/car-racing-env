@@ -56,7 +56,7 @@ class Renderer:
         self.render_list.append(state)
 
         if render_mode == "human":
-            self.update(state, trajectory=trajectory) #MEMO MPC Trajectory
+            self.update(state, trajectory=trajectory)
         elif render_mode == "online":
             self.batchUpdate(car_states)
 

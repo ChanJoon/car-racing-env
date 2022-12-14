@@ -121,8 +121,8 @@ def acados_ocp_pp(vehicle_model, track, config):
 
     ocp.constraints.x0 = zeros(nx)
 
-    ocp.constraints.lbx = array([-12]) # -12
-    ocp.constraints.ubx = array([12])  # 12
+    ocp.constraints.lbx = array([-12])
+    ocp.constraints.ubx = array([12])
     ocp.constraints.idxbx = array([1])
     nsbx = ocp.constraints.idxbx.shape[0]
     ocp.constraints.lbu = array([config.mpc.ddelta_min, config.mpc.dD_min])

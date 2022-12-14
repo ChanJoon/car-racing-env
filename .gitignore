@@ -161,3 +161,8 @@ cython_debug/
 
 acados_ocp.json
 c_generated_code/
+env/CubicSpline
+env/DynamicWindowApproach
+env/FrenetOptimalTrajectory
+env/QuinticPolynomialsPlanner
+

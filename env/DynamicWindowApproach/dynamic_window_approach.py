@@ -1,11 +1,3 @@
-"""
-
-Mobile robot motion planning sample with Dynamic Window Approach
-
-author: Atsushi Sakai (@Atsushi_twi), Göktuğ Karakaşlı
-
-"""
-
 import math
 from enum import Enum
 
@@ -16,9 +8,6 @@ show_animation = True
 
 
 def dwa_control(x, config, goal, ob):
-    """
-    Dynamic Window Approach control
-    """
     dw = calc_dynamic_window(x, config)
 
     u, trajectory = calc_control_and_trajectory(x, dw, config, goal, ob)
@@ -38,7 +27,7 @@ class Config:
 
     def __init__(self):
         # robot parameter
-        self.max_speed = 2.0  # [m/s]
+        self.max_speed = 4.0  # [m/s]
         self.min_speed = -0.5  # [m/s]
         self.max_yaw_rate = 40.0 * math.pi / 180.0  # [rad/s]
         self.max_accel = 1.0  # [m/ss]
@@ -75,15 +64,7 @@ class Config:
             raise TypeError("robot_type must be an instance of RobotType")
         self._robot_type = value
 
-
-config = Config()
-
-
 def motion(x, u, dt):
-    """
-    motion model
-    """
-
     x[2] += u[1] * dt
     x[0] += u[0] * math.cos(x[2]) * dt
     x[1] += u[0] * math.sin(x[2]) * dt
@@ -94,10 +75,6 @@ def motion(x, u, dt):
 
 
 def calc_dynamic_window(x, config):
-    """
-    calculation dynamic window based on current state x
-    """
-
     # Dynamic window from robot specification
     Vs = [config.min_speed, config.max_speed,
           -config.max_yaw_rate, config.max_yaw_rate]
@@ -116,10 +93,6 @@ def calc_dynamic_window(x, config):
 
 
 def predict_trajectory(x_init, v, y, config):
-    """
-    predict trajectory with an input
-    """
-
     x = np.array(x_init)
     trajectory = np.array(x)
     time = 0
@@ -132,10 +105,6 @@ def predict_trajectory(x_init, v, y, config):
 
 
 def calc_control_and_trajectory(x, dw, config, goal, ob):
-    """
-    calculation final input with dynamic window
-    """
-
     x_init = x[:]
     min_cost = float("inf")
     best_u = [0.0, 0.0]
@@ -169,9 +138,6 @@ def calc_control_and_trajectory(x, dw, config, goal, ob):
 
 
 def calc_obstacle_cost(trajectory, ob, config):
-    """
-    calc obstacle cost inf: collision
-    """
     ox = ob[:, 0]
     oy = ob[:, 1]
     dx = trajectory[:, 0] - ox[:, None]
@@ -202,10 +168,6 @@ def calc_obstacle_cost(trajectory, ob, config):
 
 
 def calc_to_goal_cost(trajectory, goal):
-    """
-        calc to goal cost with angle difference
-    """
-
     dx = goal[0] - trajectory[-1, 0]
     dy = goal[1] - trajectory[-1, 1]
     error_angle = math.atan2(dy, dx)
@@ -242,55 +204,3 @@ def plot_robot(x, y, yaw, config):  # pragma: no cover
         out_x, out_y = (np.array([x, y]) +
                         np.array([np.cos(yaw), np.sin(yaw)]) * config.robot_radius)
         plt.plot([x, out_x], [y, out_y], "-k")
-
-
-def main(gx=10.0, gy=10.0, robot_type=RobotType.circle):
-    print(__file__ + " start!!")
-    # initial state [x(m), y(m), yaw(rad), v(m/s), omega(rad/s)]
-    x = np.array([0.0, 0.0, math.pi / 8.0, 0.0, 0.0])
-    # goal position [x(m), y(m)]
-    goal = np.array([gx, gy])
-
-    # input [forward speed, yaw_rate]
-
-    config.robot_type = robot_type
-    # trajectory = np.array(x)
-    ob = config.ob
-    while True:
-        u, predicted_trajectory = dwa_control(x, config, goal, ob)
-        x = motion(x, u, config.dt)  # simulate robot
-        # trajectory = np.vstack((trajectory, x))  # store state history
-
-        if show_animation:
-            plt.cla()
-            # for stopping simulation with the esc key.
-            plt.gcf().canvas.mpl_connect(
-                'key_release_event',
-                lambda event: [exit(0) if event.key == 'escape' else None])
-            plt.plot(predicted_trajectory[:, 0], predicted_trajectory[:, 1], "-g")
-            plt.plot(x[0], x[1], "xr")
-            plt.plot(goal[0], goal[1], "xb")
-            plt.plot(ob[:, 0], ob[:, 1], "ok")
-            plot_robot(x[0], x[1], x[2], config)
-            plot_arrow(x[0], x[1], x[2])
-            plt.axis("equal")
-            plt.grid(True)
-            plt.pause(0.0001)
-
-        # check reaching goal
-        dist_to_goal = math.hypot(x[0] - goal[0], x[1] - goal[1])
-        if dist_to_goal <= config.robot_radius:
-            print("Goal!!")
-            break
-
-    print("Done")
-    # if show_animation:
-        # plt.plot(trajectory[:, 0], trajectory[:, 1], "-r")
-        # plt.pause(0.0001)
-
-    plt.show()
-
-
-if __name__ == '__main__':
-    main(robot_type=RobotType.rectangle)
-    # main(robot_type=RobotType.circle)

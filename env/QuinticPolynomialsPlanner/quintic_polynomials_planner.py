@@ -1,17 +1,4 @@
-"""
-
-Quintic Polynomials Planner
-
-author: Atsushi Sakai (@Atsushi_twi)
-
-Ref:
-
-- [Local Path planning And Motion Control For Agv In Positioning](http://ieeexplore.ieee.org/document/637936/)
-
-"""
-
 import math
-
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -67,32 +54,6 @@ class QuinticPolynomial:
 
 
 def quintic_polynomials_planner(sx, sy, syaw, sv, sa, gx, gy, gyaw, gv, ga, max_accel, max_jerk, dt):
-    """
-    quintic polynomial planner
-
-    input
-        s_x: start x position [m]
-        s_y: start y position [m]
-        s_yaw: start yaw angle [rad]
-        sa: start accel [m/ss]
-        gx: goal x position [m]
-        gy: goal y position [m]
-        gyaw: goal yaw angle [rad]
-        ga: goal accel [m/ss]
-        max_accel: maximum accel [m/ss]
-        max_jerk: maximum jerk [m/sss]
-        dt: time tick [s]
-
-    return
-        time: time result
-        rx: x position result list
-        ry: y position result list
-        ryaw: yaw angle result list
-        rv: velocity result list
-        ra: accel result list
-
-    """
-
     vxs = sv * math.cos(syaw)
     vys = sv * math.sin(syaw)
     vxg = gv * math.cos(gyaw)
@@ -163,10 +124,6 @@ def quintic_polynomials_planner(sx, sy, syaw, sv, sa, gx, gy, gyaw, gv, ga, max_
 
 
 def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):  # pragma: no cover
-    """
-    Plot arrow
-    """
-
     if not isinstance(x, float):
         for (ix, iy, iyaw) in zip(x, y, yaw):
             plot_arrow(ix, iy, iyaw)
@@ -174,57 +131,3 @@ def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):  # pragma: no 
         plt.arrow(x, y, length * math.cos(yaw), length * math.sin(yaw),
                   fc=fc, ec=ec, head_width=width, head_length=width)
         plt.plot(x, y)
-
-
-def main():
-    print(__file__ + " start!!")
-
-    sx = 10.0  # start x position [m]
-    sy = 10.0  # start y position [m]
-    syaw = np.deg2rad(10.0)  # start yaw angle [rad]
-    sv = 1.0  # start speed [m/s]
-    sa = 0.1  # start accel [m/ss]
-    gx = 30.0  # goal x position [m]
-    gy = -10.0  # goal y position [m]
-    gyaw = np.deg2rad(20.0)  # goal yaw angle [rad]
-    gv = 1.0  # goal speed [m/s]
-    ga = 0.1  # goal accel [m/ss]
-    max_accel = 1.0  # max accel [m/ss]
-    max_jerk = 0.5  # max jerk [m/sss]
-    dt = 0.1  # time tick [s]
-
-    time, x, y, yaw, v, a, j = quintic_polynomials_planner(
-        sx, sy, syaw, sv, sa, gx, gy, gyaw, gv, ga, max_accel, max_jerk, dt)
-
-    if show_animation:  # pragma: no cover
-        plt.plot(x, y, "-r")
-
-        plt.subplots()
-        plt.plot(time, [np.rad2deg(i) for i in yaw], "-r")
-        plt.xlabel("Time[s]")
-        plt.ylabel("Yaw[deg]")
-        plt.grid(True)
-
-        plt.subplots()
-        plt.plot(time, v, "-r")
-        plt.xlabel("Time[s]")
-        plt.ylabel("Speed[m/s]")
-        plt.grid(True)
-
-        plt.subplots()
-        plt.plot(time, a, "-r")
-        plt.xlabel("Time[s]")
-        plt.ylabel("accel[m/ss]")
-        plt.grid(True)
-
-        plt.subplots()
-        plt.plot(time, j, "-r")
-        plt.xlabel("Time[s]")
-        plt.ylabel("jerk[m/sss]")
-        plt.grid(True)
-
-        plt.show()
-
-
-if __name__ == '__main__':
-    main()

@@ -18,7 +18,7 @@ if __name__ == "__main__":
     env.start()
     
     for i in range(2000):
-        state, reward, done, info = env.step([config.mpc.pp_ref_horizon_length, config.mpc.qtheta, config.mpc.qec])
+        state, reward, done, info = env.step([config.mpc.pp_ref_horizon_length, config.mpc.qtheta, config.mpc.qec], useDWA=False)
 
         if done == True:
             break
