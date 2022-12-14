@@ -17,7 +17,7 @@ if __name__ == "__main__":
     total_state = np.empty((2000,10))
     show_animiation = True
     for i in range(5000):
-        state, reward, done, info = env.step([config.mpc.pp_ref_horizon_length, config.mpc.qtheta, config.mpc.qec], useDWA=True)
+        state, reward, done, info = env.step([config.mpc.pp_ref_horizon_length, config.mpc.qtheta, config.mpc.qec], useDWA=False)
 
         total_state[i, :] = np.concatenate((state,info))
         if show_animiation == True and done == True:
